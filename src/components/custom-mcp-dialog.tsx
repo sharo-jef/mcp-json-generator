@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCustomMCPServers } from "@/hooks/use-custom-mcp-servers";
-import type { MCPServer } from "@/types/mcp";
+import type { MCPConfig, MCPServer } from "@/types/mcp";
 
 const CATEGORIES = [
   "Remote",
@@ -86,9 +86,9 @@ export function CustomMCPDialog({
       tags: "",
       configType: "npx",
       command: "",
-      args: "",
-      env: "",
-      httpUrl: "",
+      args: [],
+      url: "",
+      customConfig: "",
     });
     setCurrentArg("");
   }, []);
@@ -103,10 +103,10 @@ export function CustomMCPDialog({
       let url = "";
       let customConfig = "";
 
-      if (config.type === "http") {
+      if ("url" in config && config.type === "http") {
         configType = "http";
         url = config.url || "";
-      } else if (config.command) {
+      } else if ("command" in config && config.command) {
         if (config.command === "npx") {
           configType = "npx";
         } else if (config.command === "uvx") {
@@ -153,7 +153,7 @@ export function CustomMCPDialog({
       return;
     }
 
-    let config: Record<string, unknown>;
+    let config: MCPConfig;
 
     if (formData.configType === "http") {
       if (!formData.url) {
