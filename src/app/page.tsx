@@ -28,7 +28,6 @@ import { useCustomMCPServers } from "@/hooks/use-custom-mcp-servers";
 import type { EditorTool, MCPServer } from "@/types/mcp";
 
 export default function Home() {
-  const [bannerVisible, setBannerVisible] = useState(false); // Set to true to show banner
   const [commandOpen, setCommandOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedEditor, setSelectedEditor] = useState<EditorTool>("vscode");
@@ -36,6 +35,12 @@ export default function Home() {
   const tableRef = useRef<{ copyToClipboard: () => void }>(null);
   const { setTheme } = useTheme();
   const { customServers, addCustomServer } = useCustomMCPServers();
+
+  // Banner
+  const [bannerVisible, setBannerVisible] = useState(false); // Set to true to show banner
+  const bannerTitle = "New MCP Servers Available!";
+  const bannerDescription =
+    "Check out the latest Model Context Protocol servers for enhanced AI capabilities.";
 
   // Load selectedEditor from localStorage on mount
   useEffect(() => {
@@ -161,11 +166,8 @@ export default function Home() {
         <Banner visible={bannerVisible} onClose={() => setBannerVisible(false)}>
           <Sparkles className="h-4 w-4" />
           <div className="flex-1">
-            <BannerTitle>New MCP Servers Available!</BannerTitle>
-            <BannerDescription>
-              Check out the latest Model Context Protocol servers for enhanced
-              AI capabilities.
-            </BannerDescription>
+            <BannerTitle>{bannerTitle}</BannerTitle>
+            <BannerDescription>{bannerDescription}</BannerDescription>
           </div>
           <BannerActions>
             <Button variant="outline" size="sm" asChild>
