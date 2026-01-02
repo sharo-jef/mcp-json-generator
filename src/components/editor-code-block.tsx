@@ -87,14 +87,14 @@ export function EditorCodeBlock({
           </Button>
         </div>
       </div>
-      <div className="overflow-auto max-h-[500px]">
+      <div className="overflow-auto max-h-[500px] rounded-b-lg">
         <SyntaxHighlighter
           language="json"
           style={oneDark}
           showLineNumbers
           customStyle={{
             margin: 0,
-            borderRadius: 0,
+            borderRadius: "0 0 0.5rem 0.5rem",
             fontSize: "0.875rem",
           }}
         >
