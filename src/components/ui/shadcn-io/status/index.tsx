@@ -9,7 +9,7 @@ export type StatusProps = ComponentProps<typeof Badge> & {
 export const Status = ({ className, status, ...props }: StatusProps) => (
   <Badge
     className={cn("flex items-center gap-2", "group", status, className)}
-    variant="secondary"
+    variant="ghost"
     // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
     {...(props as any)}
   />

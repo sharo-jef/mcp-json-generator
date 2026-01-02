@@ -482,7 +482,7 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
                           <div className="flex-1">
                             <p className="font-medium">{config.displayName}</p>
                           </div>
-                          <Status status={config.status}>
+                          <Status status={config.status} className="border-0">
                             <StatusIndicator />
                             <StatusLabel>{config.statusText}</StatusLabel>
                           </Status>
