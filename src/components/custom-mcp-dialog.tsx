@@ -76,6 +76,23 @@ export function CustomMCPDialog({
     }
   }, [formData.configType, formData.command]);
 
+  const resetForm = useCallback(() => {
+    setFormData({
+      id: "",
+      name: "",
+      description: "",
+      repository: "",
+      category: "Other",
+      tags: "",
+      configType: "npx",
+      command: "",
+      args: "",
+      env: "",
+      httpUrl: "",
+    });
+    setCurrentArg("");
+  }, []);
+
   // Load editing server data when dialog opens
   useEffect(() => {
     if (open && editingServer) {
@@ -120,24 +137,7 @@ export function CustomMCPDialog({
     } else if (open && !editingServer) {
       resetForm();
     }
-  }, [open, editingServer]);
-
-  const resetForm = useCallback(() => {
-    setFormData({
-      id: "",
-      name: "",
-      description: "",
-      repository: "",
-      category: "Other",
-      tags: "",
-      configType: "npx",
-      command: "",
-      args: [],
-      url: "",
-      customConfig: "",
-    });
-    setCurrentArg("");
-  }, []);
+  }, [open, editingServer, resetForm]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
