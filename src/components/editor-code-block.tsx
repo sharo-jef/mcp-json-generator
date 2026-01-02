@@ -91,6 +91,7 @@ export function EditorCodeBlock({
         <SyntaxHighlighter
           language="json"
           style={oneDark}
+          showLineNumbers
           customStyle={{
             margin: 0,
             borderRadius: 0,
