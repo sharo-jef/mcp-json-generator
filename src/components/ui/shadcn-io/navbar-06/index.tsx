@@ -30,11 +30,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
 import {
   Select,
   SelectContent,
@@ -95,39 +91,6 @@ const Logo = (props: React.SVGAttributes<SVGElement>) => {
     </svg>
   );
 };
-
-// Hamburger icon component
-const HamburgerIcon = ({
-  className,
-  ...props
-}: React.SVGAttributes<SVGElement>) => (
-  <svg
-    className={cn("pointer-events-none", className)}
-    width={16}
-    height={16}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    xmlns="http://www.w3.org/2000/svg"
-    {...(props as any)}
-  >
-    <path
-      d="M4 12L20 12"
-      className="origin-center -translate-y-[7px] transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-x-0 group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[315deg]"
-    />
-    <path
-      d="M4 12H20"
-      className="origin-center transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.8)] group-aria-expanded:rotate-45"
-    />
-    <path
-      d="M4 12H20"
-      className="origin-center translate-y-[7px] transition-all duration-300 ease-[cubic-bezier(.5,.85,.25,1.1)] group-aria-expanded:translate-y-0 group-aria-expanded:rotate-[135deg]"
-    />
-  </svg>
-);
 
 // Theme Toggle Component
 const ThemeToggle = () => {
@@ -301,46 +264,11 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
     },
     ref,
   ) => {
-    const [isMobile, setIsMobile] = useState(false);
-    const containerRef = useRef<HTMLElement>(null);
     const selectId = useId();
-
-    useEffect(() => {
-      const checkWidth = () => {
-        if (containerRef.current) {
-          const width = containerRef.current.offsetWidth;
-          setIsMobile(width < 768); // 768px is md breakpoint
-        }
-      };
-
-      checkWidth();
-
-      const resizeObserver = new ResizeObserver(checkWidth);
-      if (containerRef.current) {
-        resizeObserver.observe(containerRef.current);
-      }
-
-      return () => {
-        resizeObserver.disconnect();
-      };
-    }, []);
-
-    // Combine refs
-    const combinedRef = React.useCallback(
-      (node: HTMLElement | null) => {
-        containerRef.current = node;
-        if (typeof ref === "function") {
-          ref(node);
-        } else if (ref) {
-          ref.current = node;
-        }
-      },
-      [ref],
-    );
 
     return (
       <header
-        ref={combinedRef}
+        ref={ref}
         className={cn(
           "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 md:px-6 [&_*]:no-underline",
           className,
@@ -350,52 +278,6 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
         <div className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-4">
           {/* Left side */}
           <div className="flex flex-1 items-center gap-2">
-            {/* Mobile menu trigger */}
-            {isMobile && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    className="group h-8 w-8 hover:bg-accent hover:text-accent-foreground"
-                    variant="ghost"
-                    size="icon"
-                  >
-                    <HamburgerIcon />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-64 p-1">
-                  <NavigationMenu className="max-w-none">
-                    <NavigationMenuList className="flex-col items-start gap-0">
-                      {navigationLinks.map((link, index) => {
-                        const Icon = link.icon;
-                        return (
-                          <NavigationMenuItem key={index} className="w-full">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (onNavItemClick && link.href)
-                                  onNavItemClick(link.href);
-                              }}
-                              className={cn(
-                                "flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer no-underline",
-                                link.active &&
-                                  "bg-accent text-accent-foreground",
-                              )}
-                            >
-                              <Icon
-                                size={16}
-                                className="text-muted-foreground"
-                                aria-hidden={true}
-                              />
-                              <span>{link.label}</span>
-                            </button>
-                          </NavigationMenuItem>
-                        );
-                      })}
-                    </NavigationMenuList>
-                  </NavigationMenu>
-                </PopoverContent>
-              </Popover>
-            )}
             <div className="flex items-center gap-6">
               {/* Logo */}
               <button
@@ -407,48 +289,46 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
                   MCP JSON Generator
                 </span>
               </button>
-              {/* Desktop navigation - icon only */}
-              {!isMobile && (
-                <NavigationMenu className="flex">
-                  <NavigationMenuList className="gap-2">
-                    <TooltipProvider>
-                      {navigationLinks.map((link) => {
-                        const Icon = link.icon;
-                        return (
-                          <NavigationMenuItem key={link.label}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <NavigationMenuLink
-                                  href={link.href}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    if (onNavItemClick && link.href)
-                                      onNavItemClick(link.href);
-                                  }}
-                                  className={cn(
-                                    "flex size-8 items-center justify-center p-1.5 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                                    link.active &&
-                                      "bg-accent text-accent-foreground",
-                                  )}
-                                >
-                                  <Icon size={20} aria-hidden={true} />
-                                  <span className="sr-only">{link.label}</span>
-                                </NavigationMenuLink>
-                              </TooltipTrigger>
-                              <TooltipContent
-                                side="bottom"
-                                className="px-2 py-1 text-xs"
+              {/* Navigation - icon only */}
+              <NavigationMenu className="flex">
+                <NavigationMenuList className="gap-2">
+                  <TooltipProvider>
+                    {navigationLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <NavigationMenuItem key={link.label}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <NavigationMenuLink
+                                href={link.href}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  if (onNavItemClick && link.href)
+                                    onNavItemClick(link.href);
+                                }}
+                                className={cn(
+                                  "flex size-8 items-center justify-center p-1.5 rounded-md transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                                  link.active &&
+                                    "bg-accent text-accent-foreground",
+                                )}
                               >
-                                <p>{link.label}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </NavigationMenuItem>
-                        );
-                      })}
-                    </TooltipProvider>
-                  </NavigationMenuList>
-                </NavigationMenu>
-              )}
+                                <Icon size={20} aria-hidden={true} />
+                                <span className="sr-only">{link.label}</span>
+                              </NavigationMenuLink>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="bottom"
+                              className="px-2 py-1 text-xs"
+                            >
+                              <p>{link.label}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </NavigationMenuItem>
+                      );
+                    })}
+                  </TooltipProvider>
+                </NavigationMenuList>
+              </NavigationMenu>
             </div>
           </div>
           {/* Right side */}
@@ -535,4 +415,4 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
 
 Navbar06.displayName = "Navbar06";
 
-export { Logo, HamburgerIcon, ThemeToggle, UserMenu };
+export { Logo, ThemeToggle, UserMenu };
