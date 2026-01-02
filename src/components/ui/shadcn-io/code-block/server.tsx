@@ -57,6 +57,7 @@ export const CodeBlockContent = async ({
     <div
       // biome-ignore lint/security/noDangerouslySetInnerHtml: "Kinda how Shiki works"
       dangerouslySetInnerHTML={{ __html: html }}
+      // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
       {...(props as any)}
     />
   );

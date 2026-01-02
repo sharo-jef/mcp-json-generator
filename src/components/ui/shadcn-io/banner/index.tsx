@@ -78,6 +78,7 @@ export const BannerIcon = ({
       "rounded-full border border-background/20 bg-background/10 p-1 shadow-sm",
       className,
     )}
+    // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
     {...(props as any)}
   >
     <Icon size={16} />
@@ -89,6 +90,7 @@ export type BannerTitleProps = HTMLAttributes<HTMLParagraphElement>;
 export const BannerTitle = ({ className, ...props }: BannerTitleProps) => (
   <p
     className={cn("flex-1 text-sm font-semibold", className)}
+    // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
     {...(props as any)}
   />
 );

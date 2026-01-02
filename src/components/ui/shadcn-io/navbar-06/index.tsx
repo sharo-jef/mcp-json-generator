@@ -9,11 +9,9 @@ import {
   LayersIcon,
   MoonIcon,
   SunIcon,
-  UserIcon,
   UsersIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import type { ComponentProps } from "react";
 import * as React from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

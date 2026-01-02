@@ -10,6 +10,7 @@ export const Status = ({ className, status, ...props }: StatusProps) => (
   <Badge
     className={cn("flex items-center gap-2", "group", status, className)}
     variant="secondary"
+    // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
     {...(props as any)}
   />
 );
@@ -20,7 +21,11 @@ export const StatusIndicator = ({
   className,
   ...props
 }: StatusIndicatorProps) => (
-  <span className={cn("relative flex h-2 w-2", className)} {...(props as any)}>
+  <span
+    className={cn("relative flex h-2 w-2", className)}
+    // biome-ignore lint/suspicious/noExplicitAny: Required for spreading component props
+    {...(props as any)}
+  >
     <span
       className={cn(
         "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
