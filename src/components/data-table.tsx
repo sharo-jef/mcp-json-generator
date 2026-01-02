@@ -101,7 +101,7 @@ export function DataTable<TData, TValue>({
             onChange={(event) =>
               table.getColumn(searchKey)?.setFilterValue(event.target.value)
             }
-            className="max-w-sm"
+            className="max-w-sm mr-2"
           />
         )}
         <div className="ml-auto flex items-center gap-2">{toolbarActions}</div>

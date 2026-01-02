@@ -298,7 +298,7 @@ export const MCPServerTable = forwardRef<
                   setSelectedEditor(value as EditorTool)
                 }
               >
-                <SelectTrigger className="w-45">
+                <SelectTrigger className="w-37">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
