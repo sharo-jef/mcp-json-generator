@@ -1,11 +1,27 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Copy, ExternalLink, Eye } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowUpDown,
+  Copy,
+  ExternalLink,
+  Eye,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "sonner";
+import { CustomMCPDialog } from "@/components/custom-mcp-dialog";
 import { DataTable } from "@/components/data-table";
 import { EditorCodeBlock } from "@/components/editor-code-block";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -22,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Tooltip,
   TooltipContent,
@@ -29,33 +46,68 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { editorConfigs, mcpServers } from "@/data/mcp-servers";
+import { useCustomMCPServers } from "@/hooks/use-custom-mcp-servers";
 import type { EditorConfig, EditorTool, MCPServer } from "@/types/mcp";
 
-export function MCPServerTable() {
-  const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedEditor, setSelectedEditor] = useState<EditorTool>("vscode");
+export interface MCPServerTableRef {
+  copyToClipboard: () => void;
+}
 
-  // Load selectedEditor from localStorage on mount
+export const MCPServerTable = forwardRef<
+  MCPServerTableRef,
+  {
+    previewOpen?: boolean;
+    setPreviewOpen?: (open: boolean) => void;
+    selectedEditor?: EditorTool;
+    setSelectedEditor?: (editor: EditorTool) => void;
+  }
+>(function MCPServerTable(
+  {
+    previewOpen: externalPreviewOpen,
+    setPreviewOpen: externalSetPreviewOpen,
+    selectedEditor: externalSelectedEditor,
+    setSelectedEditor: externalSetSelectedEditor,
+  },
+  ref,
+) {
+  const [selectedRows, setSelectedRows] = useState<Record<string, boolean>>({});
+  const [internalPreviewOpen, setInternalPreviewOpen] = useState(false);
+  const [internalSelectedEditor, setInternalSelectedEditor] =
+    useState<EditorTool>("vscode");
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [editingServer, setEditingServer] = useState<MCPServer | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const { customServers, deleteCustomServer, isLoaded } = useCustomMCPServers();
+
+  // Use external state if provided, otherwise use internal state
+  const previewOpen = externalPreviewOpen ?? internalPreviewOpen;
+  const setPreviewOpen = externalSetPreviewOpen ?? setInternalPreviewOpen;
+  const selectedEditor = externalSelectedEditor ?? internalSelectedEditor;
+  const setSelectedEditor =
+    externalSetSelectedEditor ?? setInternalSelectedEditor;
+
+  // Prevent hydration mismatch by mounting on client only
   useEffect(() => {
-    const saved = localStorage.getItem("mcp-selected-editor");
-    if (saved) {
-      setSelectedEditor(saved as EditorTool);
-    }
+    setIsMounted(true);
   }, []);
 
-  // Save selectedEditor to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem("mcp-selected-editor", selectedEditor);
-  }, [selectedEditor]);
+  // Merge preset and custom servers
+  const allServers = useMemo(() => {
+    // Prevent hydration mismatch by not including custom servers until loaded
+    if (!isLoaded) {
+      return mcpServers;
+    }
+    const merged = [...mcpServers, ...customServers];
+    return merged;
+  }, [customServers, isLoaded]);
 
   const getSelectedServers = (): MCPServer[] => {
-    return mcpServers.filter((_, index) => selectedRows[index]);
+    return allServers.filter((_, index) => selectedRows[index]);
   };
 
   const generateMCPConfig = (editorConfig: EditorConfig): string => {
     const selected = getSelectedServers();
-    const config: any = {};
+    const config: Record<string, unknown> = {};
 
     for (const server of selected) {
       config[server.id] = server.config;
@@ -80,10 +132,19 @@ export function MCPServerTable() {
       toast.error("Invalid editor selected.");
       return;
     }
+    if (getSelectedServers().length === 0) {
+      toast.error("Please select servers in the table first");
+      return;
+    }
     const config = generateMCPConfig(editorConfig);
     await navigator.clipboard.writeText(config);
     toast.success("Configuration copied to clipboard!");
   };
+
+  // Expose copyToClipboard method to parent via ref
+  useImperativeHandle(ref, () => ({
+    copyToClipboard,
+  }));
 
   const columns: ColumnDef<MCPServer>[] = [
     {
@@ -121,9 +182,19 @@ export function MCPServerTable() {
           </Button>
         );
       },
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("name")}</div>
-      ),
+      cell: ({ row }) => {
+        const isCustom = customServers.some((s) => s.id === row.original.id);
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{row.getValue("name")}</span>
+            {isCustom && (
+              <Badge variant="secondary" className="text-xs">
+                Custom
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "description",
@@ -138,36 +209,82 @@ export function MCPServerTable() {
       cell: ({ row }) => <div>{row.getValue("category")}</div>,
     },
     {
+      id: "repository",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const server = row.original;
+        if (!server.repository) {
+          return null;
+        }
+        return (
+          <a
+            href={server.repository}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+          >
+            <Button variant="ghost" size="sm">
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </a>
+        );
+      },
+    },
+    {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
         const server = row.original;
+        const isCustom = customServers.some((s) => s.id === server.id);
 
-        if (!server.repository) {
-          return <div style={{ width: "36px", height: "32px" }} />;
-        } else {
-          return (
-            <a
-              href={server.repository || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center"
-            >
-              <Button variant="ghost" size="sm" disabled={!server.repository}>
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </a>
-          );
+        if (!isCustom) {
+          return null;
         }
+
+        return (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditingServer(server);
+                setCustomDialogOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (confirm(`"${server.name}" を削除しますか？`)) {
+                  deleteCustomServer(server.id);
+                  toast.success("カスタム MCP サーバーを削除しました");
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        );
       },
     },
   ];
+
+  // Prevent hydration mismatch - don't render until mounted
+  if (!isMounted) {
+    return (
+      <div className="w-full h-96 flex items-center justify-center">
+        <Spinner className="h-12 w-12" />
+      </div>
+    );
+  }
 
   return (
     <>
       <DataTable
         columns={columns}
-        data={mcpServers}
+        data={allServers}
         searchKey="name"
         searchPlaceholder="Search MCP servers..."
         rowSelection={selectedRows}
@@ -175,8 +292,13 @@ export function MCPServerTable() {
         toolbarActions={
           <TooltipProvider>
             <div className="flex gap-2 items-center">
-              <Select value={selectedEditor} onValueChange={setSelectedEditor}>
-                <SelectTrigger className="w-[180px]">
+              <Select
+                value={selectedEditor}
+                onValueChange={(value) =>
+                  setSelectedEditor(value as EditorTool)
+                }
+              >
+                <SelectTrigger className="w-45">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,6 +341,21 @@ export function MCPServerTable() {
                   <p>Copy to Clipboard</p>
                 </TooltipContent>
               </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setCustomDialogOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>カスタム MCP 追加</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </TooltipProvider>
         }
@@ -241,6 +378,17 @@ export function MCPServerTable() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CustomMCPDialog
+        open={customDialogOpen}
+        onOpenChange={(open) => {
+          setCustomDialogOpen(open);
+          if (!open) {
+            setEditingServer(null);
+          }
+        }}
+        editingServer={editingServer}
+      />
     </>
   );
-}
+});
