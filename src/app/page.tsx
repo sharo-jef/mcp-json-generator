@@ -1,8 +1,9 @@
 "use client";
 
-import { Download, Settings, Sparkles } from "lucide-react";
+import { Copy, Download, Eye, Settings, Sparkles, Upload } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { MCPServerTable } from "@/components/mcp-server-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +24,31 @@ import {
 } from "@/components/ui/shadcn-io/banner";
 import { Navbar06 } from "@/components/ui/shadcn-io/navbar-06";
 import { editorConfigs } from "@/data/mcp-servers";
+import { useCustomMCPServers } from "@/hooks/use-custom-mcp-servers";
+import type { EditorTool, MCPServer } from "@/types/mcp";
 
 export default function Home() {
   const [bannerVisible, setBannerVisible] = useState(false); // Set to true to show banner
   const [commandOpen, setCommandOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedEditor, setSelectedEditor] = useState<EditorTool>("vscode");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<{ copyToClipboard: () => void }>(null);
   const { setTheme } = useTheme();
+  const { customServers, addCustomServer } = useCustomMCPServers();
+
+  // Load selectedEditor from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("mcp-selected-editor");
+    if (saved) {
+      setSelectedEditor(saved as EditorTool);
+    }
+  }, []);
+
+  // Save selectedEditor to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem("mcp-selected-editor", selectedEditor);
+  }, [selectedEditor]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -43,6 +64,94 @@ export default function Home() {
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const handleExportCustomServers = () => {
+    if (customServers.length === 0) {
+      toast.error("No custom MCP servers to export");
+      return;
+    }
+
+    const dataStr = JSON.stringify(customServers, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `mcp-custom-servers-${new Date().toISOString().split("T")[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Custom MCP servers exported successfully!");
+    setCommandOpen(false);
+  };
+
+  const handleImportCustomServers = () => {
+    fileInputRef.current?.click();
+    setCommandOpen(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string) as
+          | MCPServer[]
+          | MCPServer;
+        const servers = Array.isArray(imported) ? imported : [imported];
+
+        let importedCount = 0;
+        let skippedCount = 0;
+
+        for (const server of servers) {
+          // Check if server already exists
+          const exists = customServers.some((s) => s.id === server.id);
+          if (exists) {
+            skippedCount++;
+            continue;
+          }
+
+          // Validate required fields
+          if (!server.id || !server.name || !server.config) {
+            toast.error(`Invalid server data: ${server.name || "Unknown"}`);
+            continue;
+          }
+
+          addCustomServer(server);
+          importedCount++;
+        }
+
+        if (importedCount > 0) {
+          toast.success(
+            `Imported ${importedCount} server(s)${skippedCount > 0 ? `, skipped ${skippedCount} duplicate(s)` : ""}`,
+          );
+        } else if (skippedCount > 0) {
+          toast.info(`All ${skippedCount} server(s) already exist`);
+        }
+      } catch (error) {
+        console.error("Import error:", error);
+        toast.error("Failed to import: Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset file input
+    e.target.value = "";
+  };
+
+  const handleTogglePreview = () => {
+    setPreviewOpen((prev) => !prev);
+    setCommandOpen(false);
+  };
+
+  const handleCopyConfig = useCallback(async () => {
+    if (tableRef.current) {
+      tableRef.current.copyToClipboard();
+    }
+    setCommandOpen(false);
   }, []);
 
   return (
@@ -84,18 +193,25 @@ export default function Home() {
       />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 max-w-screen-2xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">MCP JSON Generator</h1>
-          <p className="text-lg text-muted-foreground">
-            Select MCP servers from the list below to generate configuration
-            JSON for your editor or AI tool.
-          </p>
-        </div>
-
+      <main className="container mx-auto px-4 max-w-screen-2xl">
         {/* MCP Server Table */}
-        <MCPServerTable />
+        <MCPServerTable
+          ref={tableRef}
+          previewOpen={previewOpen}
+          setPreviewOpen={setPreviewOpen}
+          selectedEditor={selectedEditor}
+          setSelectedEditor={setSelectedEditor}
+        />
       </main>
+
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
       {/* Command Palette */}
       <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
@@ -103,23 +219,21 @@ export default function Home() {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Actions">
-            <CommandItem
-              onSelect={() => {
-                setCommandOpen(false);
-                // TODO: Implement export functionality
-              }}
-            >
-              <Download className="mr-2 h-4 w-4" />
-              <span>Export Configuration</span>
+            <CommandItem onSelect={handleTogglePreview}>
+              <Eye className="mr-2 h-4 w-4" />
+              <span>Toggle Preview</span>
             </CommandItem>
-            <CommandItem
-              onSelect={() => {
-                setCommandOpen(false);
-                setBannerVisible(!bannerVisible);
-              }}
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              <span>Toggle Banner</span>
+            <CommandItem onSelect={handleCopyConfig}>
+              <Copy className="mr-2 h-4 w-4" />
+              <span>Copy Configuration</span>
+            </CommandItem>
+            <CommandItem onSelect={handleExportCustomServers}>
+              <Download className="mr-2 h-4 w-4" />
+              <span>Export Custom MCP Servers</span>
+            </CommandItem>
+            <CommandItem onSelect={handleImportCustomServers}>
+              <Upload className="mr-2 h-4 w-4" />
+              <span>Import Custom MCP Servers</span>
             </CommandItem>
           </CommandGroup>
           <CommandSeparator />
@@ -155,8 +269,8 @@ export default function Home() {
               <CommandItem
                 key={config.tool}
                 onSelect={() => {
+                  setSelectedEditor(config.tool);
                   setCommandOpen(false);
-                  // TODO: Filter by editor
                 }}
               >
                 <Settings className="mr-2 h-4 w-4" />
