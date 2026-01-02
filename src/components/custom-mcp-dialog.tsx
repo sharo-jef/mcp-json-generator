@@ -58,7 +58,7 @@ export function CustomMCPDialog({
     description: "",
     repository: "",
     category: "Other",
-    tags: "",
+    tags: [] as string[],
     configType: "npx" as ConfigType,
     command: "",
     args: [] as string[],
@@ -66,6 +66,7 @@ export function CustomMCPDialog({
     customConfig: "",
   });
   const [currentArg, setCurrentArg] = useState("");
+  const [currentTag, setCurrentTag] = useState("");
 
   // Auto-set command when configType changes
   useEffect(() => {
@@ -83,7 +84,7 @@ export function CustomMCPDialog({
       description: "",
       repository: "",
       category: "Other",
-      tags: "",
+      tags: [],
       configType: "npx",
       command: "",
       args: [],
@@ -91,6 +92,7 @@ export function CustomMCPDialog({
       customConfig: "",
     });
     setCurrentArg("");
+    setCurrentTag("");
   }, []);
 
   // Load editing server data when dialog opens
@@ -127,7 +129,7 @@ export function CustomMCPDialog({
         description: editingServer.description,
         repository: editingServer.repository || "",
         category: editingServer.category,
-        tags: editingServer.tags.join(", "),
+        tags: editingServer.tags || [],
         configType,
         command,
         args,
@@ -190,7 +192,7 @@ export function CustomMCPDialog({
       repository: formData.repository || undefined,
       config,
       category: formData.category,
-      tags: formData.tags.split(",").map((tag) => tag.trim()),
+      tags: formData.tags,
     };
 
     if (editingServer) {
@@ -303,15 +305,72 @@ export function CustomMCPDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tags">Tags (カンマ区切り)</Label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) =>
-                setFormData({ ...formData, tags: e.target.value })
-              }
-              placeholder="tag1, tag2, tag3"
-            />
+            <Label htmlFor="tags">Tags</Label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  id="tags"
+                  value={currentTag}
+                  onChange={(e) => setCurrentTag(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (currentTag.trim()) {
+                        setFormData({
+                          ...formData,
+                          tags: [...formData.tags, currentTag.trim()],
+                        });
+                        setCurrentTag("");
+                      }
+                    }
+                  }}
+                  placeholder="タグを入力して Enter"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (currentTag.trim()) {
+                      setFormData({
+                        ...formData,
+                        tags: [...formData.tags, currentTag.trim()],
+                      });
+                      setCurrentTag("");
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <div
+                      key={`tag-${tag}-${index}-${formData.tags.length}`}
+                      className="flex items-center gap-1 bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm"
+                    >
+                      <span>{tag}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            tags: formData.tags.filter((_, i) => i !== index),
+                          });
+                        }}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                例: cli, npm, utility
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2">
