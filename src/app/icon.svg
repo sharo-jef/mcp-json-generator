@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <!-- Background with rounded corners -->
+    <rect width="24" height="24" rx="4" fill="#000000"/>
+    <!-- Left brace (tighter) -->
+    <path d="M11 3H10a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Right brace (tighter) -->
+    <path d="M13 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Top right cross -->
+    <path d="M20 2v4" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M22 4h-4" stroke="white" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Bottom left circle -->
+    <circle cx="4" cy="20" r="2" stroke="white" fill="white"/>
+
+</svg>
