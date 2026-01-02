@@ -406,7 +406,7 @@ export const Navbar06 = React.forwardRef<HTMLElement, Navbar06Props>(
               >
                 <div className="text-2xl">{logo}</div>
                 <span className="hidden font-bold text-xl sm:inline-block">
-                  shadcn.io
+                  MCP JSON Generator
                 </span>
               </button>
               {/* Desktop navigation - icon only */}
