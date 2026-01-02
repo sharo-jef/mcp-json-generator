@@ -8,12 +8,25 @@ export type EditorTool =
 
 export type MCPServerStatus = "stable" | "beta" | "experimental";
 
+export interface MCPConfigHttp {
+  type: "http";
+  url: string;
+}
+
+export interface MCPConfigCommand {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
+
+export type MCPConfig = MCPConfigHttp | MCPConfigCommand;
+
 export interface MCPServer {
   id: string;
   name: string;
   description: string;
   repository?: string;
-  config: any;
+  config: MCPConfig;
   category: string;
   tags: string[];
 }
