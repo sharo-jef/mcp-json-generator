@@ -26,8 +26,8 @@ export const mcpServers: MCPServer[] = [
     tags: ["playwright", "testing", "automation"],
   },
   {
-    id: "web-search-mcp",
-    name: "Web Search MCP",
+    id: "web-search",
+    name: "Web Search",
     description: "MCP Server for Web Search Integration",
     repository: "https://github.com/sharo-jef/web-search-mcp",
     config: {
